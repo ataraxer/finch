@@ -1,6 +1,7 @@
 package com.ataraxer.tweetstream
 
-import spray.http.{HttpRequest, Uri}
+import spray.http._
+import spray.http.HttpHeaders._
 
 import org.apache.commons.codec.binary.Base64
 
@@ -30,11 +31,12 @@ object OAuth {
   def parseBodyParams(body: String): Seq[(String, String)] = {
     val result = for {
       param <- decodeUrl(body) split '&'
-      Array(key, value) = param split '='
+      Array(key, value) <- Some(param split '=')
     } yield key -> value
 
     result.toSeq
   }
+
 
   def buildSignature(components: String*): String = {
     components.map(encodeUrl).mkString("&")
@@ -63,23 +65,36 @@ object OAuth {
   }
 
 
-  def apply(
-      request: HttpRequest,
-      credentials: Credentials,
-      extraParams: Map[String, String] = Map.empty): String =
-  {
+  def extractRequestParams(request: HttpRequest) = {
     val queryParams = request.uri.query.toList
     val bodyParams = parseBodyParams(request.entity.asString)
+    queryParams ++ bodyParams
+  }
+}
 
-    val oauthParams = List(
-      "oauth_consumer_key" -> credentials.consumer.key,
-      "oauth_signature_method" -> "HMAC-SHA1",
-      "oauth_timestamp" -> (System.currentTimeMillis / 1000).toString,
-      "oauth_nonce" -> System.nanoTime.toString,
-      "oauth_token" -> credentials.token.key,
-      "oauth_version" -> "1.0")
 
-    val params = queryParams ++ bodyParams ++ oauthParams ++ extraParams
+case class OAuth(
+    credentials: OAuth.Credentials,
+    extraParams: Map[String, String] = Map.empty)
+{
+  import OAuth._
+
+
+  def generateOAuthParams = List(
+    "oauth_consumer_key" -> credentials.consumer.key,
+    "oauth_signature_method" -> "HMAC-SHA1",
+    "oauth_timestamp" -> (System.currentTimeMillis / 1000).toString,
+    //"oauth_nonce" -> System.nanoTime.toString,
+    "oauth_nonce" -> util.Random.alphanumeric.take(32).mkString,
+    "oauth_token" -> credentials.token.key,
+    "oauth_version" -> "1.0") ++ extraParams
+
+
+  def signatureFor(
+    request: HttpRequest,
+    oauthParams: List[(String, String)] = generateOAuthParams) =
+  {
+    val params = extractRequestParams(request) ++ oauthParams
 
     val sortedParams = params.toMap.toList sortBy { case (name, _) => name }
 
@@ -97,6 +112,21 @@ object OAuth {
       credentials.token.secret)
 
     generateSignature(signatureBaseString, signingKey)
+  }
+
+
+  def sign(request: HttpRequest) = {
+    val oauthParams = generateOAuthParams
+    val signature = signatureFor(request, oauthParams)
+    val signedParams = oauthParams :+ ("oauth_signature" -> signature)
+
+    val oauthString = signedParams map {
+      case (k, v) => "%s=\"%s\"".format(encodeUrl(k), encodeUrl(v))
+    } mkString ", "
+
+    val authorizationHeader = RawHeader("Authorization", "OAuth " + oauthString)
+
+    request.withHeaders(authorizationHeader)
   }
 }
 

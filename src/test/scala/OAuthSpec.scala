@@ -10,7 +10,24 @@ class OAuthSpec extends UnitSpec {
   import OAuth._
 
   "OAuth" should "generate OAuth signature" in {
-    val uri = Uri("https://api.twitter.com/1/statuses/update.json?include_entities=true")
+    val consumerKey = KeyPair(
+      key = "xvz1evFS4wEEPTGEFPHBog",
+      secret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw")
+
+    val userKey = KeyPair(
+      key = "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
+      secret = "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE")
+
+    val credentials = Credentials(consumerKey, userKey)
+
+    val extraParams = Map(
+      "oauth_nonce" -> "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg",
+      "oauth_timestamp" -> "1318622958")
+
+    val signer = OAuth(credentials, extraParams)
+
+    val host = "https://api.twitter.com"
+    val uri = Uri(host + "/1/statuses/update.json?include_entities=true")
 
     val body = {
       "status=" + encodeUrl("Hello Ladies + Gentlemen, a signed OAuth request!")
@@ -18,21 +35,7 @@ class OAuthSpec extends UnitSpec {
 
     val request = HttpRequest(POST, uri, entity = body)
 
-    val consumerKey = KeyPair(
-      key = "xvz1evFS4wEEPTGEFPHBog",
-      secret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw")
-
-    val tokenKey = KeyPair(
-      key = "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
-      secret = "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE")
-
-    val credentials = Credentials(consumerKey, tokenKey)
-
-    val extraParams = Map(
-      "oauth_nonce" -> "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg",
-      "oauth_timestamp" -> "1318622958")
-
-    val result = OAuth(request, credentials, extraParams)
+    val result = signer.signatureFor(request)
 
     result should be ("tnnArxj06cWHq44gCs1OSKk/jLY=")
   }
