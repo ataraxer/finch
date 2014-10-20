@@ -1,4 +1,4 @@
-package com.ataraxer.tweetstream
+package com.ataraxer.finch
 
 import spray.http._
 import spray.http.HttpHeaders._

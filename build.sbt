@@ -1,4 +1,4 @@
-name := "twitter-stream"
+name := "finch"
 
 version := "0.1.0"
 

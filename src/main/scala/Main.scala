@@ -1,4 +1,4 @@
-package com.ataraxer.tweetstream
+package com.ataraxer.finch
 
 import akka.io.IO
 import akka.actor._
@@ -6,8 +6,8 @@ import akka.actor._
 import spray.can.Http
 
 
-object TweetStream extends App {
-  implicit val system = ActorSystem("tweetstream-app")
+object FinchMain extends App {
+  implicit val system = ActorSystem("finch-app")
 
   val twitterClient = system actorOf {
     TwitterClient.props(IO(Http))
