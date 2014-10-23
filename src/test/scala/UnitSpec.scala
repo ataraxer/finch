@@ -1,4 +1,4 @@
-package com.ataraxer.tweetstream
+package com.ataraxer.finch
 
 import org.scalatest._
 
