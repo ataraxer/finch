@@ -12,32 +12,24 @@ import spray.http.HttpMethods._
 import spray.http.HttpHeaders._
 import spray.client.pipelining._
 
-import com.typesafe.config.ConfigFactory
-
 
 object TwitterClient {
+  /* === Constructors ==== */
   def props(http: ActorRef, listener: ActorRef) = {
     Props { new TwitterClient(http, listener) }
   }
 
+  /* ==== Messages ==== */
   case object StartUserStream
 
-  val StreamUri = Uri("https://userstream.twitter.com/1.1/user.json")
+  /**
+   * Twitter user stream API endpoint.
+   */
+  private val StreamUri = Uri("https://userstream.twitter.com/1.1/user.json")
 
-  private val config = ConfigFactory.load
-
-  val consumerKey = OAuth.KeyPair(
-    key = config.getString("finch.consumer.key"),
-    secret = config.getString("finch.consumer.secret"))
-
-  val userKey = OAuth.KeyPair(
-    key = config.getString("finch.user.key"),
-    secret = config.getString("finch.user.secret"))
-
-  val credentials = OAuth.Credentials(consumerKey, userKey)
-
-  val oauthSigner = OAuth(credentials)
-
+  /**
+   * "Empty" chunk of data, sent by stream API to keep connection alive.
+   */
   private val HeartbeatMessage = "\r\n"
 }
 
@@ -48,9 +40,7 @@ class TwitterClient(http: ActorRef, listener: ActorRef) extends Actor {
   implicit val jsonFormats = Json.formats(NoTypeHints)
 
   def startUserStream(): Unit = {
-    val streamRequest = HttpRequest(GET, StreamUri)
-    val signedRequest = oauthSigner.sign(streamRequest)
-    http ! signedRequest
+    http ! HttpRequest(GET, StreamUri)
   }
 
 
