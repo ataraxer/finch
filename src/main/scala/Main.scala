@@ -27,19 +27,11 @@ object FinchMain extends App {
 
   val oauth = OAuth(credentials)
 
-  val http = system actorOf {
-    OAuthHttp.props(IO(Http), credentials)
-  }
+  val http = system actorOf OAuthHttp.props(IO(Http), credentials)
+  val streamParser = system actorOf StreamParser.props(printer)
+  val twitterClient = system actorOf TwitterClient.props(http)
 
-  val streamParser = system actorOf {
-    StreamParser.props(printer)
-  }
-
-  val twitterClient = system actorOf {
-    TwitterClient.props(http, streamParser)
-  }
-
-  twitterClient ! TwitterClient.StartUserStream
+  twitterClient ! TwitterClient.StartUserStream(streamParser)
 }
 
 
