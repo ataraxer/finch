@@ -20,7 +20,7 @@ object StreamParser {
 
 class StreamParser(listener: ActorRef) extends Actor {
   import StreamParser._
-  import StreamMessage._
+  import TwitterMessage._
 
   implicit val jsonFormats = Json.formats(NoTypeHints)
 

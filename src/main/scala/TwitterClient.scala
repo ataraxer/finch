@@ -29,7 +29,8 @@ class TwitterClient(http: ActorRef) extends Actor {
 
   def receive = {
     case StartUserStream(listener: ActorRef) => {
-      val reader = context actorOf StreamReader.props(listener)
+      val parser = context actorOf StreamParser.props(listener)
+      val reader = context actorOf StreamReader.props(parser)
       http.tell(HttpRequest(GET, StreamUri), reader)
     }
 

@@ -2,6 +2,8 @@ package com.ataraxer.finch
 
 import akka.io.IO
 import akka.actor._
+import akka.stream._
+import akka.stream.scaladsl._
 
 import spray.can.Http
 
@@ -10,6 +12,7 @@ import com.typesafe.config.ConfigFactory
 
 object FinchMain extends App {
   implicit val system = ActorSystem("finch-app")
+  implicit val flowBuilder = ActorFlowMaterializer()
 
   val printer = system.actorOf(Props[Printer])
 
@@ -28,10 +31,11 @@ object FinchMain extends App {
   val oauth = OAuth(credentials)
 
   val http = system actorOf OAuthHttp.props(IO(Http), credentials)
-  val streamParser = system actorOf StreamParser.props(printer)
   val twitterClient = system actorOf TwitterClient.props(http)
 
-  twitterClient ! TwitterClient.StartUserStream(streamParser)
+  val tweetSource = PropsSource(StreamProducer.props(twitterClient))
+
+  tweetSource.runForeach(println)
 }
 
 

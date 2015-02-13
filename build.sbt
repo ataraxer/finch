@@ -4,10 +4,11 @@ version := "0.1.0"
 
 organization := "com.ataraxer"
 
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.5"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % "2.3.6",
+  "com.typesafe.akka" %% "akka-stream-experimental" % "1.0-M3",
   "io.spray" %% "spray-can" % "1.3.1",
   "io.spray" %% "spray-http" % "1.3.1",
   "io.spray" %% "spray-client" % "1.3.1",
