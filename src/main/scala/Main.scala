@@ -31,6 +31,8 @@ object FinchMain extends App {
   val http = system actorOf OAuthHttp.props(IO(Http), credentials)
   val twitterClient = system actorOf TwitterClient.props(http)
 
+  val storage = Storage("tweet-stream-%d.txt".format(System.currentTimeMillis))
+
 
   val flowGraph = FlowGraph { implicit builder =>
     import FlowGraphImplicits._
@@ -38,10 +40,12 @@ object FinchMain extends App {
     val messageSource = PropsSource(StreamProducer.props(twitterClient))
     val messageBroadcast = Broadcast[StreamMessage]
     val messageParser = Flow[StreamMessage] map { TwitterMessage(_) }
+
     def printer = Sink.foreach(println)
+    def persist = Sink.foreach(storage.persist)
 
     messageSource ~> messageBroadcast ~> messageParser ~> printer
-                     messageBroadcast ~> printer
+                     messageBroadcast ~> persist
   }
 
 

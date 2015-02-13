@@ -19,7 +19,7 @@ object TwitterMessage {
   private implicit val jsonFormats = Json.formats(NoTypeHints)
 
 
-  def apply(message: StreamMessage) = {
+  def apply(message: StreamMessage): TwitterMessage = {
       val json = parse(message.content)
 
       if (json \ "friends" != JNothing) {
