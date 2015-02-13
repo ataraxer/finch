@@ -29,9 +29,9 @@ class StreamReader(listener: ActorRef) extends Actor {
       val data = bytes.asString
 
       if (data != HeartbeatMessage && data.contains("\r\n")) {
-        val message = buffer + data.replace("\r\n", "")
-        buffer = ""
+        val message = (buffer + data).trim()
         listener ! StreamMessage(message)
+        buffer = ""
       } else {
         buffer += data
       }

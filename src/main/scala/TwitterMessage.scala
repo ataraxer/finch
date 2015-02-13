@@ -1,5 +1,9 @@
 package com.ataraxer.finch
 
+import org.json4s._
+import org.json4s.native.{Serialization => Json}
+import org.json4s.native.JsonMethods._
+
 
 trait TwitterMessage
 
@@ -10,6 +14,23 @@ object TwitterMessage {
       "FriendsMessage(%d friends)".format(friends.size)
     }
   }
+
+
+  private implicit val jsonFormats = Json.formats(NoTypeHints)
+
+
+  def apply(message: StreamMessage) = {
+      val json = parse(message.content)
+
+      if (json \ "friends" != JNothing) {
+        json.extract[FriendsMessage]
+      } else if (json \ "text" != JNothing) {
+        json.extract[TweetMessage]
+      } else {
+        UnknownMessage(message.content)
+      }
+  }
+
 
   case class TweetMessage(
       id: Long,

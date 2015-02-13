@@ -14,8 +14,6 @@ object FinchMain extends App {
   implicit val system = ActorSystem("finch-app")
   implicit val flowBuilder = ActorFlowMaterializer()
 
-  val printer = system.actorOf(Props[Printer])
-
   val config = ConfigFactory.load
 
   val consumerKey = OAuth.KeyPair(
@@ -33,16 +31,21 @@ object FinchMain extends App {
   val http = system actorOf OAuthHttp.props(IO(Http), credentials)
   val twitterClient = system actorOf TwitterClient.props(http)
 
-  val tweetSource = PropsSource(StreamProducer.props(twitterClient))
 
-  tweetSource.runForeach(println)
-}
+  val flowGraph = FlowGraph { implicit builder =>
+    import FlowGraphImplicits._
 
+    val messageSource = PropsSource(StreamProducer.props(twitterClient))
+    val messageBroadcast = Broadcast[StreamMessage]
+    val messageParser = Flow[StreamMessage] map { TwitterMessage(_) }
+    def printer = Sink.foreach(println)
 
-class Printer extends Actor {
-  def receive = {
-    case message => println(message)
+    messageSource ~> messageBroadcast ~> messageParser ~> printer
+                     messageBroadcast ~> printer
   }
+
+
+  flowGraph.run()
 }
 
 

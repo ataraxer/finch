@@ -5,7 +5,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.actor._
 
-import scala.collection.mutable.Queue
+import scala.collection.mutable
 
 
 object StreamProducer {
@@ -18,13 +18,13 @@ object StreamProducer {
 
 
 class StreamProducer(twitterClient: ActorRef)
-  extends ActorPublisher[TwitterMessage]
+  extends ActorPublisher[StreamMessage]
 {
   import ActorPublisherMessage._
 
   twitterClient ! TwitterClient.StartUserStream(self)
 
-  private var buffer = Queue.empty[TwitterMessage]
+  private var buffer = mutable.Queue.empty[StreamMessage]
 
 
   def receive = {
@@ -36,7 +36,7 @@ class StreamProducer(twitterClient: ActorRef)
 
     case Cancel =>
 
-    case message: TwitterMessage => {
+    case message: StreamMessage => {
       if (totalDemand > 0) {
         onNext(message)
       } else {
